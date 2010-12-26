@@ -39,6 +39,7 @@
 				"CREATE TABLE `tbl_fields_shorten` (
 					`id` int(11) unsigned NOT NULL auto_increment,
 					`field_id` int(11) unsigned NOT NULL,
+					`redirect` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
 					PRIMARY KEY (`id`),
 					KEY `field_id` (`field_id`)
 				) ENGINE=MyISAM;"

@@ -6,15 +6,8 @@
 
 		protected static $revalidate = '__must-revalidate';
 
-		public function canShowTableColumn(){
-			return false;
-		}
-
 		/**
-		 * Test whether this field can be filtered. This default implementation
-		 * prohibits filtering. Filtering allows the xml output results to be limited
-		 * according to an input parameter. Subclasses should override this if
-		 * filtering is supported.
+		 * Test whether this field can be filtered.
 		 *
 		 * @return boolean
 		 *	true if this can be filtered, false otherwise.
@@ -25,8 +18,7 @@
 
 		/**
 		 * Test whether this field must be unique in a section, that is, only one of
-		 * this field's type is allowed per section. This default implementation
-		 * always returns false.
+		 * this field's type is allowed per section.
 		 *
 		 * @return boolean
 		 *	true if the content of this field must be unique, false otherwise.
@@ -35,29 +27,33 @@
 			return true;
 		}
 
-		/**
-		 * Construct the html block to display a summary of this field. Any error messages
-		 * generated are appended to the optional input error array. This function calls
-		 * buildLocationSelect once it is completed
-		 *
-		 * @see buildLocationSelect()
-		 * @param array $errors (optional)
-		 *	an array to append html formatted error messages to. this defaults to null.
-		 * @return XMLElement
-		 *	the root xml element of the html display of this.
-		 */
-		public function buildSummaryBlock($errors = null){
-			$div = new XMLElement('div');
-			$div->setAttribute('class', 'group');
+		public function displaySettingsPanel(&$wrapper, $errors=NULL)
+		{
+			parent::displaySettingsPanel(&$wrapper, $errors=NULL);
+			$this->appendShowColumnCheckbox($wrapper);
 
-			$label = Widget::Label(__('Label'));
-			$label->appendChild(Widget::Input('fields['.$this->get('sortorder').'][label]', $this->get('label')));
-			if(isset($errors['label'])) $div->appendChild(Widget::wrapFormElementWithError($label, $errors['label']));
-			else $div->appendChild($label);
+			$label = Widget::Label('Url to compile (wrap xpath expressions with curly brackets)');
+			$input = Widget::Input('fields['.$this->get('sortorder').'][redirect]', $this->get('redirect'));
 
-			$label->appendChild(new XMLElement('span', __('The field won\'t be displayed.')));
+			$label->appendChild($input);
+			$wrapper->appendChild($label);
+		}
 
-			return $div;
+		public function commit()
+		{
+			if (!parent::commit() || !($id = $this->get('id')))
+				return false;
+
+			$fields = array(
+				'field_id' => $id,
+				'redirect' => $this->get('redirect')
+			);
+
+			Symphony::Database()->query(
+				"DELETE FROM `tbl_fields_".$this->handle().
+				"` WHERE `field_id` = '$id' LIMIT 1");
+
+			return Symphony::Database()->insert($fields, 'tbl_fields_' . $this->handle());
 		}
 
 		/**
@@ -103,7 +99,7 @@
 		public function displayDatasourceFilterPanel(XMLElement &$wrapper, $data = null, $errors = null, $fieldnamePrefix = null, $fieldnamePostfix = null){
 			parent::displayDatasourceFilterPanel(&$wrapper, $data, $errors, $fieldnamePrefix, $fieldnamePostfix);
 
-			$wrapper->appendChild(new XMLElement('span', __('$param url[xpath/expression]')));
+			$wrapper->appendChild(new XMLElement('span', __("append <em>no-redirect</em> to prevent redirect.")));
 		}
 
 		/**
@@ -125,12 +121,12 @@
 		 */
 		public function buildDSRetrivalSQL($data, &$joins, &$where, $andOperation = false)
 		{
-			list($shorten, $url) = array_map('trim', explode(' ', $data[0]));
-			if (!$shorten || !$url) return true;
+			list($shorten, $redirect) = array_map('trim', explode(' ', $data[0]));
+			if (!$shorten || $shorten == 'no-redirect') return true;
 
 			$entry_id = self::decode($shorten);
-			// if the expression have already been compiled
 
+			// if the expression have already been compiled
 			$query = 'select value from tbl_entries_data_'. $this->get('id').
 						' where entry_id = '. $entry_id;
 
@@ -138,12 +134,14 @@
 				'value', 0, $query
 			);
 
-			if ($data && $data !== self::$revalidate) redirect($data);
+			$redirect = ($redirect == 'no-redirect') ? false : true;
+			if ($data && $data !== self::$revalidate && $redirect)
+				redirect($data);
 
 			$where .= ' AND e.id = '. $entry_id;
 
-			$this->shorten = $shorten;
-			$this->url = $url;
+			$this->shorten  = $shorten;
+			$this->redirect = $redirect;
 			return true;
 		}
 
@@ -167,15 +165,96 @@
 		 *	the identifier of this field entry instance. defaults to null.
 		 */
 		public function appendFormattedElement(XMLElement &$wrapper, $data, $encode = false, $mode = null, $entry_id = null) {
-			if ($this->shorten && $data['value'] && $data['value'] !== self::$revalidate)
-				redirect($data['value']);
 
-			$url  = $this->compile($entry_id);
-			if ($url) redirect($url);
+			$data = $data['value'];
 
-			$data = self::encode($entry_id);
-			parent::appendFormattedElement($wrapper, $data, $encode);
+			if ($this->shorten)
+			{
+				if ($data == self::$revalidate)
+					$data = $this->compile($entry_id);
+
+				if ($this->redirect && $data)
+					redirect($data);
+			}
+
+			$shorten = self::encode($entry_id);
+			$wrapper->appendChild(new XMLElement(
+				$this->handle(),
+				$data == self::$revalidate ? '' : $data,
+				array('handle' => $shorten)
+			));
 		}
+
+		/**
+		 * Format this field value for display in the publish index tables.
+		 *
+		 * @param array $data
+		 * an associative array of data for this string. At minimum this requires a
+		 * key of 'value'.
+		 * @param XMLElement $link (optional)
+		 * an xml link structure to append the content of this to provided it is not
+		 * null. it defaults to null.
+		 * @return string
+		 * the formatted string summary of the values of this field instance.
+		 */
+		public function prepareTableValue($data, XMLElement $link = null)
+		{
+			$data = $data['value'];
+			if ($data == self::$revalidate)
+				$data = '';
+
+			if ($link)
+			{
+				$link->setValue($data);
+				return $link->generate();
+			}
+
+			return $data;
+		}
+
+		/**
+		 * Display the publish panel for this field. The display panel is the
+		 * interface to create the data in instances of this field once added
+		 * to a section.
+		 *
+		 * @param XMLElement $wrapper
+		 *	the xml element to append the html defined user interface to this
+		 *	field.
+		 * @param array $data (optional)
+		 *	any existing data that has been supplied for this field instance.
+		 *	this is encoded as an array of columns, each column maps to an
+		 *	array of row indexes to the contents of that column. this defaults
+		 *	to null.
+		 * @param mixed $flagWithError (optional)
+		 *	flag with error defaults to null.
+		 * @param string $fieldnamePrefix (optional)
+		 *	the string to be prepended to the display of the name of this field.
+		 *	this defaults to null.
+		 * @param string $fieldnameSuffix (optional)
+		 *	the string to be appended to the display of the name of this field.
+		 *	this defaults to null.
+		 * @param number $entry_id (optional)
+		 *	the entry id of this field. this defaults to null.
+		 */
+		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null)
+		{
+			if (!$entry_id) return;
+
+			$shorten = new XMLElement(
+				'span', $this->handle(). ': '. self::encode($entry_id)
+			);
+
+			$wrapper->appendChild($shorten);
+
+			if (!$data || $data['value'] == self::$revalidate) return;
+
+			$redirect = new XMLElement(
+				'span', 'redirect: '. $data['value']
+			);
+
+			$wrapper->appendChild($redirect);
+		}
+
 
 		/**
 		 * The default method for constructing the example form markup containing this
@@ -245,7 +324,7 @@
 		{
 			require_once EXTENSIONS. '/shorten/lib/data.shorten.php';
 
-			if (!$this->shorten || !$this->url) return null;
+			if (!$this->shorten || !$this->get('redirect')) return null;
 
 			$section_id = $this->get('parent_section');
 			$ds = new datasource_Shorten(Frontend::Instance());
@@ -278,10 +357,10 @@
 
 			$doc->loadXML($xml);
 
-			$xpath  = new DOMXPath($doc);
-			preg_match_all('/\[(.*?)\]/', $this->url, $matches);
+			$xpath = new DOMXPath($doc);
+			$full  = $this->get('redirect');
+			preg_match_all('/\{(.*?)\}/', $full, $matches);
 
-			$full = $this->url;
 			$search  = $matches[0];
 			$replace = $matches[1];
 			foreach ($search as $i => $str)
@@ -295,7 +374,6 @@
 				$full = str_replace($str, join('', $new), $full);
 			}
 
-			
 			$this->update($entry_id, $full);
 			return $full;
 		}
