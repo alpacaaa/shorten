@@ -40,13 +40,30 @@
 		public function displaySettingsPanel(&$wrapper, $errors=NULL)
 		{
 			parent::displaySettingsPanel(&$wrapper, $errors=NULL);
-			$this->appendShowColumnCheckbox($wrapper);
 
-			$label = Widget::Label('Url to compile (wrap xpath expressions with curly brackets)');
-			$input = Widget::Input('fields['.$this->get('sortorder').'][redirect]', $this->get('redirect'));
+			$order = $this->get('sortorder');
+			$label = Widget::Label('Url');
+			$input = Widget::Input('fields['. $order. '][redirect]', $this->get('redirect'));
+
+			$help = new XMLElement(
+				'p',
+				__('Absolute or relative. Wrap xpath expressions in curly brackets'). 
+				' <code>{entry/category/item/@handle}/post/{entry/@id}</code>.',
+				array('class' => 'help')
+			);
 
 			$label->appendChild($input);
+			$label->appendChild($help);
 			$wrapper->appendChild($label);
+
+			$label = Widget::Label();
+			$input = Widget::Input("fields[{$order}][hide]", 'yes', 'checkbox');
+
+			if ($this->get('hide') == 'yes') $input->setAttribute('checked', 'checked');
+			$label->setValue($input->generate() .' '. __('Hide this field on publish page'));
+
+			$wrapper->appendChild($label);
+			$this->appendShowColumnCheckbox($wrapper);
 		}
 
 		/**
@@ -63,7 +80,8 @@
 
 			$fields = array(
 				'field_id' => $id,
-				'redirect' => $this->get('redirect')
+				'redirect' => $this->get('redirect'),
+				'hide' => $this->get('hide')
 			);
 
 			Symphony::Database()->query(
@@ -116,7 +134,11 @@
 		public function displayDatasourceFilterPanel(XMLElement &$wrapper, $data = null, $errors = null, $fieldnamePrefix = null, $fieldnamePostfix = null){
 			parent::displayDatasourceFilterPanel(&$wrapper, $data, $errors, $fieldnamePrefix, $fieldnamePostfix);
 
-			$wrapper->appendChild(new XMLElement('span', __("append <em>no-redirect</em> to prevent redirect.")));
+			$wrapper->appendChild(
+				new XMLElement('p',
+					__('append %s to prevent redirect.', array(' <code>no-redirect</code> ')),
+					array('class' => 'help')
+				));
 		}
 
 		/**
@@ -153,7 +175,7 @@
 
 			$redirect = ($redirect == 'no-redirect') ? false : true;
 			if ($data && $data !== self::$revalidate && $redirect)
-				redirect($data);
+				$this->redirect($data);
 
 			$where .= ' AND e.id = '. $entry_id;
 
@@ -191,7 +213,7 @@
 					$data = $this->compile($entry_id);
 
 				if ($this->redirect && $data)
-					redirect($data);
+					$this->redirect($data);
 			}
 
 			$shorten = self::encode($entry_id);
@@ -255,15 +277,15 @@
 		 */
 		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null)
 		{
+			if ($this->get('hide') == 'yes') return;
 			if (!$entry_id) return;
 
 			$label = Widget::Label($this->get('label'));
 			$span  = new XMLElement('span');
 			$short = new XMLElement('div',
-				__(
-					'This entry has been shortened to <strong>%s</strong>',
-					array(self::encode($entry_id))
-				));
+				__('This entry has been shortened to').
+					' <strong>'. self::encode($entry_id). '</strong>'
+				);
 
 			$span->appendChild($short);
 			$label->appendChild($span);
@@ -391,7 +413,7 @@
 			$replace = $matches[1];
 			foreach ($search as $i => $str)
 			{
-				$query  = "//entry/". trim($replace[$i], '/');
+				$query  = trim($replace[$i], '/');
 				$result = $xpath->query($query);
 
 				$new = array();
@@ -416,5 +438,12 @@
 			);
 
 			Symphony::Database()->insert($data, $table);
+		}
+
+		public static function redirect($url)
+		{
+			$parse = parse_url($url);
+			if (!$parse['host']) $url = URL. '/'. ltrim($url, '/');
+			redirect($url);
 		}
 	}
