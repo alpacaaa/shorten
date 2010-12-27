@@ -27,6 +27,16 @@
 			return true;
 		}
 
+		/**
+		 * Display the default settings panel, calls the `buildSummaryBlock`
+		 * function after basic field settings are added to the wrapper.
+		 *
+		 * @see buildSummaryBlock()
+		 * @param XMLElement $wrapper
+		 *	the input XMLElement to which the display of this will be appended.
+		 * @param mixed errors (optional)
+		 *	the input error collection. this defaults to null.
+		 */
 		public function displaySettingsPanel(&$wrapper, $errors=NULL)
 		{
 			parent::displaySettingsPanel(&$wrapper, $errors=NULL);
@@ -39,6 +49,13 @@
 			$wrapper->appendChild($label);
 		}
 
+		/**
+		 * Commit the settings of this field from the section editor to
+		 * create an instance of this field in a section.
+		 *
+		 * @return boolean
+		 *	true if the commit was successful, false otherwise.
+		 */
 		public function commit()
 		{
 			if (!parent::commit() || !($id = $this->get('id')))
@@ -240,19 +257,28 @@
 		{
 			if (!$entry_id) return;
 
-			$shorten = new XMLElement(
-				'span', $this->handle(). ': '. self::encode($entry_id)
-			);
+			$label = Widget::Label($this->get('label'));
+			$span  = new XMLElement('span');
+			$short = new XMLElement('div',
+				__(
+					'This entry has been shortened to <strong>%s</strong>',
+					array(self::encode($entry_id))
+				));
 
-			$wrapper->appendChild($shorten);
+			$span->appendChild($short);
+			$label->appendChild($span);
+			$wrapper->appendChild($label);
 
-			if (!$data || $data['value'] == self::$revalidate) return;
+			if (!$data) return;
 
-			$redirect = new XMLElement(
-				'span', 'redirect: '. $data['value']
-			);
+			if ($data['value'] == self::$revalidate)
+			{
+				$div = new XMLElement('div', __("The url hasn't been compiled yet."));
+				return $span->appendChild($div);
+			}
 
-			$wrapper->appendChild($redirect);
+			$link  = Widget::Anchor($data['value'], $data['value']);
+			$span->appendChild($link);
 		}
 
 
