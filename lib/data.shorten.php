@@ -17,13 +17,10 @@
 		public function grab(&$param_pool=NULL){
 			$result = new XMLElement($this->dsParamROOTELEMENT);
 				
-			try{
+			try {
 				include(TOOLKIT . '/data-sources/datasource.section.php');
 			}
-			catch(Exception $e){
-				$result->appendChild(new XMLElement('error', $e->getMessage()));
-				return $result;
-			}	
+			catch (Exception $e){ }	
 
 			if($this->_force_empty_result) $result = $this->emptyXMLSet();
 			return $result;

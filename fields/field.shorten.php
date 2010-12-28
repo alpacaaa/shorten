@@ -12,7 +12,8 @@
 		 * @return boolean
 		 *	true if this can be filtered, false otherwise.
 		 */
-		public function canFilter(){
+		public function canFilter()
+		{
 			return true;
 		}
 
@@ -23,7 +24,8 @@
 		 * @return boolean
 		 *	true if the content of this field must be unique, false otherwise.
 		 */
-		public function mustBeUnique(){
+		public function mustBeUnique()
+		{
 			return true;
 		}
 
@@ -108,8 +110,8 @@
 		 * @return array[string]mixed
 		 *	the processed field data.
 		 */
-		public function processRawFieldData($data, &$status, $simulate=false, $entry_id=null) {
-
+		public function processRawFieldData($data, &$status, $simulate=false, $entry_id=null)
+		{
 			$status = self::__OK__;
 
 			return array(
@@ -131,7 +133,8 @@
 		 * @param string $fieldNameSuffix
 		 *	the suffix to apply to the display of this.
 		 */
-		public function displayDatasourceFilterPanel(XMLElement &$wrapper, $data = null, $errors = null, $fieldnamePrefix = null, $fieldnamePostfix = null){
+		public function displayDatasourceFilterPanel(XMLElement &$wrapper, $data = null, $errors = null, $fieldnamePrefix = null, $fieldnamePostfix = null)
+		{
 			parent::displayDatasourceFilterPanel(&$wrapper, $data, $errors, $fieldnamePrefix, $fieldnamePostfix);
 
 			$wrapper->appendChild(
@@ -165,7 +168,7 @@
 
 			$entry_id = self::decode($shorten);
 
-			// if the expression have already been compiled
+			// if the expression has already been compiled
 			$query = 'select value from tbl_entries_data_'. $this->get('id').
 						' where entry_id = '. $entry_id;
 
@@ -175,7 +178,7 @@
 
 			$redirect = ($redirect == 'no-redirect') ? false : true;
 			if ($data && $data !== self::$revalidate && $redirect)
-				$this->redirect($data);
+				self::redirect($data);
 
 			$where .= ' AND e.id = '. $entry_id;
 
@@ -203,8 +206,8 @@
 		 * @param number $entry_id (optional)
 		 *	the identifier of this field entry instance. defaults to null.
 		 */
-		public function appendFormattedElement(XMLElement &$wrapper, $data, $encode = false, $mode = null, $entry_id = null) {
-
+		public function appendFormattedElement(XMLElement &$wrapper, $data, $encode = false, $mode = null, $entry_id = null)
+		{
 			$data = $data['value'];
 
 			if ($this->shorten)
@@ -213,12 +216,13 @@
 					$data = $this->compile($entry_id);
 
 				if ($this->redirect && $data)
-					$this->redirect($data);
+					self::redirect($data);
 			}
 
 			$shorten = self::encode($entry_id);
+
 			$wrapper->appendChild(new XMLElement(
-				$this->handle(),
+				$this->get('element_name'),
 				$data == self::$revalidate ? '' : $data,
 				array('handle' => $shorten)
 			));
@@ -299,7 +303,8 @@
 				return $span->appendChild($div);
 			}
 
-			$link  = Widget::Anchor($data['value'], $data['value']);
+			$url  = self::normalizeUrl($data['value']);
+			$link = Widget::Anchor($url, $url);
 			$span->appendChild($link);
 		}
 
@@ -313,7 +318,8 @@
 		 * @return XMLElement
 		 *	a label widget containing the formatted field element name of this.
 		 */
-		public function getExampleFormMarkup(){
+		public function getExampleFormMarkup()
+		{
 			return null;
 		}
 
@@ -323,7 +329,8 @@
 		 * to overload this method to create a table structure that contains
 		 * additional columns to store the specific data created by the field.
 		 */
-		public function createTable(){
+		public function createTable()
+		{
 			return Symphony::Database()->query(
 				"CREATE TABLE IF NOT EXISTS `tbl_entries_data_" . $this->get('id') . "` (
 				  `id` int(11) unsigned NOT NULL auto_increment,
@@ -342,24 +349,29 @@
 		 * Stolen from: http://snipplr.com/view/22246/base62-encode--decode/
 		 *
 		 */
-		public static function encode($val, $base=62, $chars='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+		public static function encode($val, $base=62, $chars='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+		{
 			// can't handle numbers larger than 2^31-1 = 2147483647
 			$str = '';
+
 			do {
 				$i = $val % $base;
 				$str = $chars[$i] . $str;
 				$val = ($val - $i) / $base;
 			} while($val > 0);
+
 			return $str;
 		}
 
-		public static function decode($str, $base=62, $chars='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+		public static function decode($str, $base=62, $chars='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+		{
 			$len = strlen($str);
 			$val = 0;
 			$arr = array_flip(str_split($chars));
-			for($i = 0; $i < $len; ++$i) {
+
+			for($i = 0; $i < $len; ++$i)
 				$val += $arr[$str[$i]] * pow($base, $len-$i-1);
-			}
+
 			return $val;
 		}
 
@@ -442,8 +454,18 @@
 
 		public static function redirect($url)
 		{
+			$url = self::normalizeUrl($url);
+
+			header ('Location: '. $url, $replace = true, 301);
+			die();
+		}
+
+		public static function normalizeUrl($url)
+		{
 			$parse = parse_url($url);
-			if (!$parse['host']) $url = URL. '/'. ltrim($url, '/');
-			redirect($url);
+			if (!$parse['host'])
+				$url = URL. '/'. ltrim($url, '/');
+
+			return $url;
 		}
 	}
