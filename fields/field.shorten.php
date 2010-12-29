@@ -50,7 +50,7 @@
 			$help = new XMLElement(
 				'p',
 				__('Absolute or relative. Wrap xpath expressions in curly brackets'). 
-				' <code>{entry/category/item/@handle}/post/{entry/@id}</code>.',
+				' <code>post/{entry/category/item/@handle}/{entry/@id}</code>.',
 				array('class' => 'help')
 			);
 

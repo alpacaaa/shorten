@@ -9,7 +9,7 @@
 			return array(
 				'name' => 'Shorten',
 				'version' => '1.0',
-				'release-date' => '2010-12-28',
+				'release-date' => '2010-12-29',
 				'author' => array(
 					'name' => 'Marco Sampellegrini',
 					'email' => 'm@rcosa.mp'
