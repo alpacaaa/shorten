@@ -5,7 +5,8 @@ You could build, for example, your own in-site url shortener service having urls
 
 
 * Author: [Marco Sampellegrini](http://github.com/alpacaaa)
-* Release date: 29th december 2010
+* Release date: 9th February 2011
+* Version: 0.2
 
 This is based on the [Entry URL Field](http://github.com/nickdunn/entry_url_field/) by Nick Dunn.
 

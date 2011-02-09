@@ -8,8 +8,8 @@
 		{
 			return array(
 				'name' => 'Shorten',
-				'version' => '1.0',
-				'release-date' => '2010-12-29',
+				'version' => '0.2',
+				'release-date' => '2011-02-09',
 				'author' => array(
 					'name' => 'Marco Sampellegrini',
 					'email' => 'm@rcosa.mp'
@@ -30,12 +30,12 @@
 
 		public function uninstall()
 		{
-			$this->_Parent->Database->query("DROP TABLE `tbl_fields_shorten`");
+			Symphony::Database()->query("DROP TABLE `tbl_fields_shorten`");
 		}
 
 		public function install()
 		{
-			return $this->_Parent->Database->query(
+			return Symphony::Database()->query(
 				"CREATE TABLE `tbl_fields_shorten` (
 					`id` int(11) unsigned NOT NULL auto_increment,
 					`field_id` int(11) unsigned NOT NULL,
@@ -51,7 +51,7 @@
 		{
 			if (!self::$sm)
 			{
-				$sm = new SectionManager(Frontend::instance());
+				$sm = new SectionManager(Symphony::Engine());
 				self::$sm = $sm;
 			}
 

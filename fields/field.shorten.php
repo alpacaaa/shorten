@@ -285,7 +285,7 @@
 			if (!$entry_id) return;
 
 			$label = Widget::Label($this->get('label'));
-			$span  = new XMLElement('span');
+			$span  = new XMLElement('span', null, array('class' => 'frame'));
 			$short = new XMLElement('div',
 				__('This entry has been shortened to').
 					' <strong>'. self::encode($entry_id). '</strong>'
@@ -387,7 +387,7 @@
 			if (!$this->shorten || !$this->get('redirect')) return null;
 
 			$section_id = $this->get('parent_section');
-			$ds = new datasource_Shorten(Frontend::Instance());
+			$ds = new datasource_Shorten(Symphony::Engine());
 
 			$fields = Symphony::Database()->fetch(
 				sprintf(
