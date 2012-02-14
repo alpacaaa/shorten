@@ -6,6 +6,12 @@
 
 		protected static $revalidate = '__must-revalidate';
 
+		public function __construct(&$parent){
+			parent::__construct($parent);
+			$this->_name = __('Shorten');
+		}
+
+
 		/**
 		 * Test whether this field can be filtered.
 		 *
@@ -240,11 +246,11 @@
 		 * @return string
 		 * the formatted string summary of the values of this field instance.
 		 */
-		public function prepareTableValue($data, XMLElement $link = null)
+		public function prepareTableValue($data, XMLElement $link = null, $entry_id = null)
 		{
 			$data = $data['value'];
 			if ($data == self::$revalidate)
-				$data = '';
+				$data = $this->compile($entry_id);
 
 			if ($link)
 			{
@@ -282,7 +288,10 @@
 		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null)
 		{
 			if ($this->get('hide') == 'yes') return;
-			if (!$entry_id) return;
+			if (!$entry_id || !$data) return;
+
+			if ($data['value'] == self::$revalidate)
+				$data['value'] = $this->compile($entry_id);
 
 			$label = Widget::Label($this->get('label'));
 			$span  = new XMLElement('span', null, array('class' => 'frame'));
@@ -294,14 +303,6 @@
 			$span->appendChild($short);
 			$label->appendChild($span);
 			$wrapper->appendChild($label);
-
-			if (!$data) return;
-
-			if ($data['value'] == self::$revalidate)
-			{
-				$div = new XMLElement('div', __("The url hasn't been compiled yet."));
-				return $span->appendChild($div);
-			}
 
 			$url  = self::normalizeUrl($data['value']);
 			$link = Widget::Anchor($url, $url);
@@ -384,10 +385,8 @@
 		{
 			require_once EXTENSIONS. '/shorten/lib/data.shorten.php';
 
-			if (!$this->shorten || !$this->get('redirect')) return null;
-
 			$section_id = $this->get('parent_section');
-			$ds = new datasource_Shorten(Symphony::Engine());
+			$ds = new datasource_Shorten(Symphony::Engine(), array());
 
 			$fields = Symphony::Database()->fetch(
 				sprintf(
@@ -404,7 +403,6 @@
 			$ds->dsParamROOTELEMENT = 'aaa';
 			$ds->dsParamSORT = 'system:id';
 			$ds->dsParamASSOCIATEDENTRYCOUNTS = 'no';
-			$ds->_param_output_only = false;
 
 			$ds->dsParamFILTERS = array(
 				'id' => $entry_id

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension id="shorten" status="released" xmlns="http://symphony-cms.com/schemas/extension/1.0">
+	<name>Shorten field</name>
+	<description>Shorten entry ids to tiny alphanumeric strings (like u8X).</description>
+	<repo type="github">https://github.com/alpacaaa/shorten</repo>
+	<url type="discuss">http://symphony-cms.com/discuss/thread/58087/</url>
+	<types>
+		<type>Field Types</type>
+	</types>
+	<authors>
+		<author>
+			<name github="alpacaaa" symphony="alpacaaa">Marco Sampellegrini</name>
+		</author>
+	</authors>
+	<releases>
+		<release version="0.3" date="2012-02-14" min="2.2.5" />
+		<release version="0.2" date="2010-02-09" min="2.1.2" />
+	</releases>
+</extension>
