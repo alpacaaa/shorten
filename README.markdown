@@ -5,8 +5,8 @@ You could build, for example, your own in-site url shortener service having urls
 
 
 * Author: [Marco Sampellegrini](http://github.com/alpacaaa)
-* Release date: 9th February 2011
-* Version: 0.2
+* Release date: 14th February 2012
+* Version: 0.3
 
 This is based on the [Entry URL Field](http://github.com/nickdunn/entry_url_field/) by Nick Dunn.
 
@@ -42,15 +42,5 @@ Add a new filter by this field with `{$url-r}` as value. That's it!
 ## I'm not a liar
 
 With a simple rewrite rule, you can get `$root/aB4` to work.
-Insert this code in your `.htaccess` just before the "Check for trailing slash" section.
-
-	### SHORT URLS REWRITE
-	RewriteCond %{REQUEST_FILENAME} !-d
-	RewriteCond %{REQUEST_FILENAME} !-f
-	RewriteCond %{REQUEST_URI} /([a-zA-Z0-9]{1,3})\/?$
-	RewriteRule ^(.*)$ index.php?r=$1 [L]
-
-I believe extensions like Url router or Root page params would let you accomplish something similar either.
-
-To speed things up, use a page just for redirects and adjust the `RewriteRule` accordingly.
-
+I'm not going to show how to do that anymore, as you can simply achieve the same result using the 
+[Url Router](http://github.com/symphonists/url_router/) extension. Cool stuff.

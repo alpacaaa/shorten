@@ -8,8 +8,8 @@
 		{
 			return array(
 				'name' => 'Shorten',
-				'version' => '0.2',
-				'release-date' => '2011-02-09',
+				'version' => '0.3',
+				'release-date' => '2012-02-14',
 				'author' => array(
 					'name' => 'Marco Sampellegrini',
 					'email' => 'm@rcosa.mp'
