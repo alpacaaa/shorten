@@ -19,7 +19,7 @@
 		public function grab(&$param_pool=NULL){
 			$result = new XMLElement($this->dsParamROOTELEMENT);
 
-			$this->_param_output_only = false; // f*ck you
+			$this->_param_output_only = false;
 
 			try{
 				include(TOOLKIT . '/data-sources/datasource.section.php');
