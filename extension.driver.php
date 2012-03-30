@@ -2,21 +2,6 @@
 
 	class extension_shorten extends Extension
 	{
-		protected static $sm;
-
-		public function about()
-		{
-			return array(
-				'name' => 'Shorten',
-				'version' => '0.3',
-				'release-date' => '2012-02-14',
-				'author' => array(
-					'name' => 'Marco Sampellegrini',
-					'email' => 'm@rcosa.mp'
-				)
-			);
-		}
-
 		public function getSubscribedDelegates()
 		{
 			return array(
@@ -49,18 +34,12 @@
 
 		public function cleanup($context)
 		{
-			if (!self::$sm)
-			{
-				$sm = new SectionManager(Symphony::Engine());
-				self::$sm = $sm;
-			}
+			$section = SectionManager::fetch($context['entry']->get('section_id'));
 
-			$section = self::$sm->fetch($context['entry']->get('section_id'));
 			$field = $section->fetchFields('shorten');
 			if (!$field) return;
 
 			$field = current($field);
-
 			$entry_id = $context['entry']->get('id');
 			$field->update($entry_id);
 		}

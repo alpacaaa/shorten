@@ -2,7 +2,7 @@
 
 	require_once TOOLKIT. '/class.datasource.php';
 
-	class datasource_Shorten extends Datasource
+	class datasource_Shorten extends SectionDatasource
 	{
 		protected $source;
 
@@ -16,13 +16,12 @@
 			return $this->source;
 		}
 
-		public function grab(&$param_pool=NULL){
+		public function grab(array &$param_pool=NULL){
 			$result = new XMLElement($this->dsParamROOTELEMENT);
-
 			$this->_param_output_only = false;
 
 			try{
-				include(TOOLKIT . '/data-sources/datasource.section.php');
+				$result = $this->execute($param_pool);
 			}
 			catch(FrontendPageNotFoundException $e){
 				// Work around. This ensures the 404 page is displayed and
@@ -34,9 +33,8 @@
 				return $result;
 			}
 
-			if($this->_force_empty_result) $result = $this->emptyXMLSet();
 
-			
+			if ($this->_force_empty_result) $result = $this->emptyXMLSet();
 
 			return $result;
 		}

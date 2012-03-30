@@ -6,9 +6,9 @@
 
 		protected static $revalidate = '__must-revalidate';
 
-		public function __construct(&$parent){
-			parent::__construct($parent);
+		public function __construct(){
 			$this->_name = __('Shorten');
+			parent::__construct();
 		}
 
 
@@ -93,8 +93,8 @@
 			);
 
 			Symphony::Database()->query(
-				"DELETE FROM `tbl_fields_".$this->handle().
-				"` WHERE `field_id` = '$id' LIMIT 1");
+				sprintf('DELETE FROM `tbl_fields_%s` WHERE `field_id` = %s LIMIT 1', $this->handle(), $id)
+			);
 
 			return Symphony::Database()->insert($fields, 'tbl_fields_' . $this->handle());
 		}
@@ -175,11 +175,10 @@
 			$entry_id = self::decode($shorten);
 
 			// if the expression has already been compiled
-			$query = 'select value from tbl_entries_data_'. $this->get('id').
-						' where entry_id = '. $entry_id;
+			$query = 'select value from tbl_entries_data_%s where entry_id = %s';
 
 			$data  = Symphony::Database()->fetchVar(
-				'value', 0, $query
+				'value', 0, sprintf($query, $this->get('id'), $entry_id)
 			);
 
 			$redirect = ($redirect == 'no-redirect') ? false : true;
@@ -386,7 +385,7 @@
 			require_once EXTENSIONS. '/shorten/lib/data.shorten.php';
 
 			$section_id = $this->get('parent_section');
-			$ds = new datasource_Shorten(Symphony::Engine(), array());
+			$ds = new datasource_Shorten();
 
 			$fields = Symphony::Database()->fetch(
 				sprintf(
@@ -409,7 +408,8 @@
 			);
 			$ds->setSource($section_id);
 
-			$xml = $ds->grab()->generate();
+			$params = array();
+			$xml = $ds->grab($params)->generate();
 			$doc = new DomDocument;
 			$doc->preserveWhiteSpace = false;
 
