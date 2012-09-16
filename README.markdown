@@ -30,17 +30,8 @@ That's a relative url, so `$root` will be prepended automatically.
 Ok, this is cool so far, but you need a way to specify if and how the redirect should happen.
 This is done through datasource filtering.
 
-Choose a page where you want the redirect to happen and pick a datasource which filters by `Post` section.
-I know, I said you would end up with urls like `$root/aB4` but I was actually lying.
-There are fairly simple workarounds for that, see next section for some hints.
-
-Let's keep it simple for now, so our first goal is to make `$root/?r=aB4` redirect to our full url.
-On our Index page, we have a datasource that shows the latest posts: we're going to use that one.
-Add a new filter by this field with `{$url-r}` as value. That's it!
-
-
-## I'm not a liar
-
-With a simple rewrite rule, you can get `$root/aB4` to work.
-I'm not going to show how to do that anymore, as you can simply achieve the same result using the 
-[Url Router](http://github.com/symphonists/url_router/) extension. Cool stuff.
+Symphony 2.3.1 supports page params in index page, which is exactly what you need for this extension to work.  
+Simply add a parameter to your index page (let's call it `r`). Now create a datasource which filters by 
+this field with `{$r}` as value and attach it to the index page. Whenever a page isn't matched (you don't have 
+page handles like `55u`, don't you? :D), Symphony will fallback to the index page and execute the datasource.
+If a match is found, it will automatically redirect to the url specified in the entry. Cool stuff.
