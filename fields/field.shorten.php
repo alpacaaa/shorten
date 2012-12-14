@@ -3,17 +3,43 @@
 
 	class fieldShorten extends Field
 	{
-
-		protected static $revalidate = '__must-revalidate';
-
-		public function __construct(){
+		/**
+		 * Construct a new instance of this field.
+		 */
+		public function __construct()
+		{
 			$this->_name = __('Shorten');
 			parent::__construct();
 		}
 
+		/**
+		 * Test whether this field can show the table column.
+		 *
+		 * @return boolean
+		 *	true if this can, false otherwise.
+		 */
+		public function canShowTableColumn()
+		{
+			return true;
+		}
 
 		/**
-		 * Test whether this field can be filtered.
+		 * Test whether this field can be toggled using the With Selected menu
+		 * on the Publish Index.
+		 *
+		 * @return boolean
+		 *	true if it can be toggled, false otherwise.
+		 */
+		public function canToggle()
+		{
+			return false;
+		}
+
+		/**
+		 * Test whether this field can be filtered. This default implementation
+		 * prohibits filtering. Filtering allows the XML output results to be limited
+		 * according to an input parameter. Subclasses should override this if
+		 * filtering is supported.
 		 *
 		 * @return boolean
 		 *	true if this can be filtered, false otherwise.
@@ -24,13 +50,66 @@
 		}
 
 		/**
+		 * Test whether this field can be prepopulated with data. This default
+		 * implementation does not support pre-population and, thus, returns false.
+		 *
+		 * @return boolean
+		 *	true if this can be pre-populated, false otherwise.
+		 */
+		public function canPrePopulate()
+		{
+			return false;
+		}
+
+		/**
+		 * Test whether this field can be sorted. This default implementation
+		 * returns false.
+		 *
+		 * @return boolean
+		 *	true if this field is sortable, false otherwise.
+		 */
+		public function isSortable()
+		{
+			return false;
+		}
+
+		/**
 		 * Test whether this field must be unique in a section, that is, only one of
-		 * this field's type is allowed per section.
+		 * this field's type is allowed per section. This default implementation
+		 * always returns false.
 		 *
 		 * @return boolean
 		 *	true if the content of this field must be unique, false otherwise.
 		 */
 		public function mustBeUnique()
+		{
+			return true;
+		}
+
+		/**
+		 * Test whether this field supports data-source output grouping. This
+		 * default implementation prohibits grouping. Data-source grouping allows
+		 * clients of this field to group the XML output according to this field.
+		 * Subclasses should override this if grouping is supported.
+		 *
+		 * @return boolean
+		 *	true if this field does support data-source grouping, false otherwise.
+		 */
+		public function allowDatasourceOutputGrouping()
+		{
+			return false;
+		}
+
+		/**
+		 * Just prior to the field being deleted, this function allows
+		 * Fields to cleanup any additional things before it is removed
+		 * from the section. This may be useful to remove data from any
+		 * custom field tables or the configuration.
+		 *
+		 * @since Symphony 2.2.1
+		 * @return boolean
+		 */
+		public function tearDown()
 		{
 			return true;
 		}
@@ -45,24 +124,12 @@
 		 * @param mixed errors (optional)
 		 *	the input error collection. this defaults to null.
 		 */
-		public function displaySettingsPanel(&$wrapper, $errors=NULL)
+		public function displaySettingsPanel(XMLElement &$wrapper, $errors = null)
 		{
+
 			parent::displaySettingsPanel(&$wrapper, $errors=NULL);
 
 			$order = $this->get('sortorder');
-			$label = Widget::Label('Url');
-			$input = Widget::Input('fields['. $order. '][redirect]', $this->get('redirect'));
-
-			$help = new XMLElement(
-				'p',
-				__('Absolute or relative. Wrap xpath expressions in curly brackets'). 
-				' <code>post/{entry/category/item/@handle}/{entry/@id}</code>.',
-				array('class' => 'help')
-			);
-
-			$label->appendChild($input);
-			$label->appendChild($help);
-			$wrapper->appendChild($label);
 
 			$label = Widget::Label();
 			$input = Widget::Input("fields[{$order}][hide]", 'yes', 'checkbox');
@@ -75,198 +142,12 @@
 		}
 
 		/**
-		 * Commit the settings of this field from the section editor to
-		 * create an instance of this field in a section.
-		 *
-		 * @return boolean
-		 *	true if the commit was successful, false otherwise.
-		 */
-		public function commit()
-		{
-			if (!parent::commit() || !($id = $this->get('id')))
-				return false;
-
-			$fields = array(
-				'field_id' => $id,
-				'redirect' => $this->get('redirect'),
-				'hide' => $this->get('hide')
-			);
-
-			Symphony::Database()->query(
-				sprintf('DELETE FROM `tbl_fields_%s` WHERE `field_id` = %s LIMIT 1', $this->handle(), $id)
-			);
-
-			return Symphony::Database()->insert($fields, 'tbl_fields_' . $this->handle());
-		}
-
-		/**
-		 * Process the raw field data.
-		 *
-		 * @param mixed $data
-		 *	post data from the entry form
-		 * @param reference $status
-		 *	the status code resultant from processing the data.
-		 * @param boolean $simulate (optional)
-		 *	true if this will tell the CF's to simulate data creation, false
-		 *	otherwise. this defaults to false. this is important if clients
-		 *	will be deleting or adding data outside of the main entry object
-		 *	commit function.
-		 * @param mixed $entry_id (optional)
-		 *	the current entry. defaults to null.
-		 * @return array[string]mixed
-		 *	the processed field data.
-		 */
-		public function processRawFieldData($data, &$status, $simulate=false, $entry_id=null)
-		{
-			$status = self::__OK__;
-
-			return array(
-				'value' => self::$revalidate
-			);
-		}
-
-		/**
-		 * Display the default data-source filter panel.
-		 *
-		 * @param XMLElement $wrapper
-		 *	the input XMLElement to which the display of this will be appended.
-		 * @param mixed $data (optional)
-		 *	the input data. this defaults to null.
-		 * @param mixed errors (optional)
-		 *	the input error collection. this defaults to null.
-		 * @param string $fieldNamePrefix
-		 *	the prefix to apply to the display of this.
-		 * @param string $fieldNameSuffix
-		 *	the suffix to apply to the display of this.
-		 */
-		public function displayDatasourceFilterPanel(XMLElement &$wrapper, $data = null, $errors = null, $fieldnamePrefix = null, $fieldnamePostfix = null)
-		{
-			parent::displayDatasourceFilterPanel(&$wrapper, $data, $errors, $fieldnamePrefix, $fieldnamePostfix);
-
-			$wrapper->appendChild(
-				new XMLElement('p',
-					__('append %s to prevent redirect.', array(' <code>no-redirect</code> ')),
-					array('class' => 'help')
-				));
-		}
-
-		/**
-		 * Construct the SQL statement fragments to use to retrieve the data of this
-		 * field when utilized as a data source.
-		 *
-		 * @param array $data
-		 *	the supplied form data to use to construct the query from??
-		 * @param string $joins
-		 *	the join sql statement fragment to append the additional join sql to.
-		 * @param string $where
-		 *	the where condition sql statement fragment to which the additional
-		 *	where conditions will be appended.
-		 * @param boolean $andOperation (optional)
-		 *	true if the values of the input data should be appended as part of
-		 *	the where condition. this defaults to false.
-		 * @return boolean
-		 *	true if the construction of the sql was successful, false otherwise.
-		 */
-		public function buildDSRetrivalSQL($data, &$joins, &$where, $andOperation = false)
-		{
-			list($shorten, $redirect) = array_map('trim', explode(' ', $data[0]));
-			if (!$shorten || $shorten == 'no-redirect') return true;
-
-			$entry_id = self::decode($shorten);
-
-			// if the expression has already been compiled
-			$query = 'select value from tbl_entries_data_%s where entry_id = %s';
-
-			$data  = Symphony::Database()->fetchVar(
-				'value', 0, sprintf($query, $this->get('id'), $entry_id)
-			);
-
-			$redirect = ($redirect == 'no-redirect') ? false : true;
-			if ($data && $data !== self::$revalidate && $redirect)
-				self::redirect($data);
-
-			$where .= ' AND e.id = '. $entry_id;
-
-			$this->shorten  = $shorten;
-			$this->redirect = $redirect;
-			return true;
-		}
-
-		/**
-		 * Append the formatted xml output of this field as utilized as a data source.
-		 *
-		 * @param XMLElement $wrapper
-		 *	the xml element to append the xml representation of this to.
-		 * @param array $data
-		 *	the current set of values for this field. the values are structured as
-		 *	for displayPublishPanel.
-		 * @param boolean $encode (optional)
-		 *	flag as to whether this should be html encoded prior to output. this
-		 *	defaults to false.
-		 * @param string $mode
-		 *	 A field can provide ways to output this field's data. For instance a mode
-		 *  could be 'items' or 'full' and then the function would display the data
-		 *  in a different way depending on what was selected in the datasource
-		 *  included elements.
-		 * @param number $entry_id (optional)
-		 *	the identifier of this field entry instance. defaults to null.
-		 */
-		public function appendFormattedElement(XMLElement &$wrapper, $data, $encode = false, $mode = null, $entry_id = null)
-		{
-			$data = $data['value'];
-
-			if ($this->shorten)
-			{
-				if ($data == self::$revalidate)
-					$data = $this->compile($entry_id);
-
-				if ($this->redirect && $data)
-					self::redirect($data);
-			}
-
-			$shorten = self::encode($entry_id);
-
-			$wrapper->appendChild(new XMLElement(
-				$this->get('element_name'),
-				$data == self::$revalidate ? '' : $data,
-				array('handle' => $shorten)
-			));
-		}
-
-		/**
-		 * Format this field value for display in the publish index tables.
-		 *
-		 * @param array $data
-		 * an associative array of data for this string. At minimum this requires a
-		 * key of 'value'.
-		 * @param XMLElement $link (optional)
-		 * an xml link structure to append the content of this to provided it is not
-		 * null. it defaults to null.
-		 * @return string
-		 * the formatted string summary of the values of this field instance.
-		 */
-		public function prepareTableValue($data, XMLElement $link = null, $entry_id = null)
-		{
-			$data = $data['value'];
-			if ($data == self::$revalidate)
-				$data = $this->compile($entry_id);
-
-			if ($link)
-			{
-				$link->setValue($data);
-				return $link->generate();
-			}
-
-			return $data;
-		}
-
-		/**
 		 * Display the publish panel for this field. The display panel is the
-		 * interface to create the data in instances of this field once added
-		 * to a section.
+		 * interface shown to Authors that allow them to input data into this
+		 * field for an `Entry`.
 		 *
 		 * @param XMLElement $wrapper
-		 *	the xml element to append the html defined user interface to this
+		 *	the XML element to append the html defined user interface to this
 		 *	field.
 		 * @param array $data (optional)
 		 *	any existing data that has been supplied for this field instance.
@@ -281,46 +162,89 @@
 		 * @param string $fieldnameSuffix (optional)
 		 *	the string to be appended to the display of the name of this field.
 		 *	this defaults to null.
-		 * @param number $entry_id (optional)
+		 * @param integer $entry_id (optional)
 		 *	the entry id of this field. this defaults to null.
 		 */
 		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null)
 		{
-			if ($this->get('hide') == 'yes') return;
-			if (!$entry_id || !$data) return;
+			if ($this->get('hide') == 'yes' || !$entry_id) return;
 
-			if ($data['value'] == self::$revalidate)
-				$data['value'] = $this->compile($entry_id);
+			$value = isset($data['value']) ? $data['value'] : $this->encode($entry_id);
 
 			$label = Widget::Label($this->get('label'));
 			$span  = new XMLElement('span', null, array('class' => 'frame'));
 			$short = new XMLElement('div',
 				__('This entry has been shortened to').
-					' <strong>'. self::encode($entry_id). '</strong>'
+					' <strong>'. $value. '</strong>'
 				);
 
 			$span->appendChild($short);
 			$label->appendChild($span);
 			$wrapper->appendChild($label);
-
-			$url  = self::normalizeUrl($data['value']);
-			$link = Widget::Anchor($url, $url);
-			$span->appendChild($link);
 		}
 
+		/**
+		 * Process the raw field data.
+		 *
+		 * @param mixed $data
+		 *	post data from the entry form
+		 * @param integer $status
+		 *	the status code resultant from processing the data.
+		 * @param string $message
+		 *	the place to set any generated error message. any previous value for
+		 *	this variable will be overwritten.
+		 * @param boolean $simulate (optional)
+		 *	true if this will tell the CF's to simulate data creation, false
+		 *	otherwise. this defaults to false. this is important if clients
+		 *	will be deleting or adding data outside of the main entry object
+		 *	commit function.
+		 * @param mixed $entry_id (optional)
+		 *	the current entry. defaults to null.
+		 * @return array
+		 *	the processed field data.
+		 */
+		public function processRawFieldData($data, &$status, &$message=null, $simulate=false, $entry_id=null) {
+
+			$status = self::__OK__;
+
+			if (!$entry_id) return array();
+
+			return array(
+				'value' => $this->encode($entry_id)
+			);
+		}
 
 		/**
 		 * The default method for constructing the example form markup containing this
 		 * field when utilized as part of an event. This displays in the event documentation
 		 * and serves as a basic guide for how markup should be constructed on the
-		 * Frontend to save this field
+		 * `Frontend` to save this field
 		 *
 		 * @return XMLElement
-		 *	a label widget containing the formatted field element name of this.
+		 *  a label widget containing the formatted field element name of this.
 		 */
-		public function getExampleFormMarkup()
-		{
-			return null;
+		public function getExampleFormMarkup(){
+			return '';
+		}
+
+		/**
+		 * Commit the settings of this field from the section editor to
+		 * create an instance of this field in a section.
+		 *
+		 * @return boolean
+		 *  true if the commit was successful, false otherwise.
+		 */
+		public function commit() {
+			if (!parent::commit()) return false;
+
+			$id = $this->get('id');
+			if ($id === false) return false;
+
+			$fields = array(
+				'hide' => $this->get('hide')
+			);
+
+			return FieldManager::saveSettings($id, $fields);
 		}
 
 		/**
@@ -328,9 +252,10 @@
 		 * minimum set of columns for a valid field table. Subclasses are expected
 		 * to overload this method to create a table structure that contains
 		 * additional columns to store the specific data created by the field.
+		 *
+		 * @return boolean
 		 */
-		public function createTable()
-		{
+		public function createTable(){
 			return Symphony::Database()->query(
 				"CREATE TABLE IF NOT EXISTS `tbl_entries_data_" . $this->get('id') . "` (
 				  `id` int(11) unsigned NOT NULL auto_increment,
@@ -339,17 +264,16 @@
 				  PRIMARY KEY  (`id`),
 				  KEY `entry_id` (`entry_id`),
 				  KEY `value` (`value`)
-				) ENGINE=MyISAM;"
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;"
 			);
 		}
-		
 
 		/*
 		 * -----------------------------------------------------------------
 		 * Stolen from: http://snipplr.com/view/22246/base62-encode--decode/
 		 *
 		 */
-		public static function encode($val, $base=62, $chars='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+		public function encode($val, $base=62, $chars='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
 		{
 			// can't handle numbers larger than 2^31-1 = 2147483647
 			$str = '';
@@ -363,7 +287,7 @@
 			return $str;
 		}
 
-		public static function decode($str, $base=62, $chars='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+		public function decode($str, $base=62, $chars='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
 		{
 			$len = strlen($str);
 			$val = 0;
@@ -373,97 +297,5 @@
 				$val += $arr[$str[$i]] * pow($base, $len-$i-1);
 
 			return $val;
-		}
-
-		/*
-		 * -----------------------------------------------------------------
-		 */
-
-
-		public function compile($entry_id)
-		{
-			require_once EXTENSIONS. '/shorten/lib/data.shorten.php';
-
-			$section_id = $this->get('parent_section');
-			$ds = new datasource_Shorten();
-
-			$fields = Symphony::Database()->fetch(
-				sprintf(
-					"SELECT element_name FROM `tbl_fields` WHERE `parent_section` = %d",
-					$section_id
-				)
-			);
-
-			foreach($fields as $field)
-				$ds->dsParamINCLUDEDELEMENTS[] = $field['element_name'];
-
-			$ds->dsParamLIMIT = 1;
-			$ds->dsParamSTARTPAGE = '1';
-			$ds->dsParamROOTELEMENT = 'aaa';
-			$ds->dsParamSORT = 'system:id';
-			$ds->dsParamASSOCIATEDENTRYCOUNTS = 'no';
-
-			$ds->dsParamFILTERS = array(
-				'id' => $entry_id
-			);
-			$ds->setSource($section_id);
-
-			$params = array();
-			$xml = $ds->grab($params)->generate();
-			$doc = new DomDocument;
-			$doc->preserveWhiteSpace = false;
-
-			$doc->loadXML($xml);
-
-			$xpath = new DOMXPath($doc);
-			$full  = $this->get('redirect');
-			preg_match_all('/\{(.*?)\}/', $full, $matches);
-
-			$search  = $matches[0];
-			$replace = $matches[1];
-			foreach ($search as $i => $str)
-			{
-				$query  = trim($replace[$i], '/');
-				$result = $xpath->query($query);
-
-				$new = array();
-				foreach ($result as $r) $new[] = $r->nodeValue;
-
-				$full = str_replace($str, join('', $new), $full);
-			}
-
-			$this->update($entry_id, $full);
-			return $full;
-		}
-
-		public function update($entry_id, $value = null)
-		{
-			if (!$value) $value = self::$revalidate;
-			$this->entryDataCleanup($entry_id);
-
-			$table = 'tbl_entries_data_'. $this->get('id');
-			$data  = array(
-				'value' => $value,
-				'entry_id' => $entry_id
-			);
-
-			Symphony::Database()->insert($data, $table);
-		}
-
-		public static function redirect($url)
-		{
-			$url = self::normalizeUrl($url);
-
-			header ('Location: '. $url, $replace = true, 301);
-			die();
-		}
-
-		public static function normalizeUrl($url)
-		{
-			$parse = parse_url($url);
-			if (!$parse['host'])
-				$url = URL. '/'. ltrim($url, '/');
-
-			return $url;
 		}
 	}
