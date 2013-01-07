@@ -298,4 +298,77 @@
 
 			return $val;
 		}
+
+
+		/**
+		 * Construct the SQL statement fragments to use to retrieve the data of this
+		 * field when utilized as a data source.
+		 *
+		 * @see toolkit.Datasource#__determineFilterType
+		 * @param array $data
+		 *  An array of the data that contains the values for the filter as specified
+		 *  in the datasource editor. The value that is entered in the datasource editor
+		 *  is made into an array by using + or , to separate the filter.
+		 * @param string $joins
+		 *  A string containing any table joins for the current SQL fragment. By default
+		 *  Datasources will always join to the `tbl_entries` table, which has an alias of
+		 *  `e`. This parameter is passed by reference.
+		 * @param string $where
+		 *  A string containing the WHERE conditions for the current SQL fragment. This
+		 *  is passed by reference and is expected to be used to add additional conditions
+		 *  specifc to this field
+		 * @param boolean $andOperation (optional)
+		 *  This parameter defines whether the `$data` provided should be treated as
+		 *  AND or OR conditions. This parameter will be set to true if $data used a
+		 *  + to separate the values, otherwise it will be false. It is false by default.
+		 * @return boolean
+		 *  True if the construction of the SQL was successful, false otherwise.
+		 */
+		public function buildDSRetrievalSQL($data, &$joins, &$where, $andOperation = false) {
+			$field_id = $this->get('id');
+
+			// REGEX filtering is a special case, and will only work on the first item
+			// in the array. You cannot specify multiple filters when REGEX is involved.
+			if (self::isFilterRegex($data[0])) {
+				$this->buildRegexSQL($data[0], array('value'), $joins, $where);
+			}
+
+			// AND operation, iterates over `$data` and uses a new JOIN for
+			// every item.
+			else if ($andOperation) {
+				foreach ($data as $value) {
+					$this->_key++;
+					$value = $this->cleanValue($value);
+					$joins .= "
+						LEFT JOIN
+							`tbl_entries_data_{$field_id}` AS t{$field_id}_{$this->_key}
+							ON (e.id = t{$field_id}_{$this->_key}.entry_id)
+					";
+					$where .= "
+						AND t{$field_id}_{$this->_key}.value COLLATE utf8_bin = '{$value}'
+					";
+				}
+			}
+
+			// Default logic, this will use a single JOIN statement and collapse
+			// `$data` into a string to be used inconjuction with IN
+			else {
+				foreach ($data as &$value) {
+					$value = $this->cleanValue($value);
+				}
+
+				$this->_key++;
+				$data = implode("', '", $data);
+				$joins .= "
+					LEFT JOIN
+						`tbl_entries_data_{$field_id}` AS t{$field_id}_{$this->_key}
+						ON (e.id = t{$field_id}_{$this->_key}.entry_id)
+				";
+				$where .= "
+					AND t{$field_id}_{$this->_key}.value COLLATE utf8_bin IN ('{$data}')
+				";
+			}
+
+			return true;
+		}
 	}
