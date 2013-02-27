@@ -124,10 +124,10 @@
 		 * @param mixed errors (optional)
 		 *	the input error collection. this defaults to null.
 		 */
-		public function displaySettingsPanel(XMLElement &$wrapper, $errors = null)
+		public function displaySettingsPanel(XMLElement $wrapper, $errors = null)
 		{
 
-			parent::displaySettingsPanel(&$wrapper, $errors=NULL);
+			parent::displaySettingsPanel($wrapper, $errors=NULL);
 
 			$order = $this->get('sortorder');
 
@@ -165,7 +165,7 @@
 		 * @param integer $entry_id (optional)
 		 *	the entry id of this field. this defaults to null.
 		 */
-		public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null)
+		public function displayPublishPanel(XMLElement $wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null)
 		{
 			if ($this->get('hide') == 'yes' || !$entry_id) return;
 
